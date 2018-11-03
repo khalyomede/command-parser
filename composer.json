@@ -1,0 +1,27 @@
+{
+	"name": "khalyomede/command-parser",
+	"description": "Parse arguments, options and flags.",
+	"type": "library",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Khalyomede",
+			"email": "khalyomede@gmail.com"
+		}
+	],
+	"minimum-stability": "stable",
+	"require": {
+		"php": ">=7.2.0"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "7.*"
+	},
+	"autoload": {
+		"psr-4": {
+			"Khalyomede\\": "src"
+		}
+	},
+	"config": {
+		"bin-dir": "bin"
+	}
+}

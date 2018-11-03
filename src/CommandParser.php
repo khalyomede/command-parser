@@ -1,0 +1,164 @@
+<?php
+    namespace Khalyomede;
+
+    use Khalyomede\Exception\OptionWithoutValueException;
+    use Khalyomede\Exception\NotEnoughArgumentsException;
+
+    class CommandParser {
+        public static function parse(array $definition): array {
+            global $argv;
+
+            ['arguments' => $arguments, 'options' => $options, 'flags' => $flags] = $definition;
+
+            $args = [];
+            $opts = [];
+            $flgs = [];
+
+            $commands = $_SERVER['argv'] ?? $argv; 
+            $toRemove = [];
+
+            foreach( $flags as $flag ) {
+                $parts = explode(':', $flag);
+                $shortAndLong = $parts[0];
+                $type = isset($parts[1]) ? trim($parts[1]) : null;
+                $parts = explode(',', $shortAndLong);
+                $long = trim($parts[0]);
+                $short = isset($parts[1]) ? trim($parts[1]) : null;
+                $flagFound = false;
+
+                foreach( $commands as $command ) {
+                    $longQuoted = preg_quote($long);
+                    
+                    $regexp = "/^(--$longQuoted";
+
+                    if( is_null($short) === false ) {
+                        $shortQuoted = preg_quote($short);
+
+                        $regexp .= "|-$shortQuoted";
+                    }                    
+
+                    $regexp .= ")$/";
+
+                    if( preg_match($regexp, $command) === 1 ) {
+                        $toRemove[] = $command;
+
+                        $flagFound = true;
+                    }
+                }
+
+                $flgs[$long] = $flagFound;
+            }
+
+            $commands = array_values(array_diff($commands, $toRemove));
+            $commandCount = count($commands);
+
+            $toRemove = [];
+
+            foreach( $options as $option ) {
+                $parts = explode(':', $option);
+                $shortAndLong = $parts[0];
+                $type = isset($parts[1]) ? trim($parts[1]) : null;
+                $parts = explode(',', $shortAndLong);
+                $long = trim($parts[0]);
+                $short = isset($parts[1]) ? trim($parts[1]) : null;
+                $commandFound = false;
+                $commandValue = null;
+
+                for( $i = 0; $i < $commandCount; $i++ ) {
+                    $command = $commands[$i];
+
+                    $longQuoted = preg_quote($long);
+
+                    $regexp1 = "/^(--$longQuoted";
+                    $regexp2 = "/^(--$longQuoted";
+
+                    if( is_null($short) === false ) {
+                        $shortQuoted = preg_quote($short);
+                        
+                        $regexp1 .= "|-$shortQuoted";
+                        $regexp2 .= "|-$shortQuoted";
+                    }
+
+                    $regexp1 .= ")$/";
+                    $regexp2 .= ")=(.+)$/";
+
+                    if( preg_match($regexp1, $command) === 1 ) {
+                        $nextIndex = $i + 1;
+
+                        if( isset($commands[$nextIndex]) === true ) {
+                            $nextCommand = $commands[$nextIndex];
+                            
+                            if( preg_match('/^--/', $nextCommand) !== 1 ) {
+                                $toRemove[] = [$command, $nextCommand];
+
+                                $commandFound = true;
+                                $commandValue = $nextCommand;
+                            }
+                            else {
+                                throw new OptionWithoutValueException("option $long has no value");
+                            }
+                        }
+                        else {
+                            throw new OptionWithoutValueException("option $long has no value");
+                        }
+                    }
+                    else if( preg_match($regexp2, $command, $matches) === 1 ) {
+                        $toRemove[] = $command;
+
+                        $commandFound = true;
+                        $commandValue = $matches[2];
+                    }
+                }
+
+                if( $commandFound === true ) {
+                    $opts[$long] = $commandValue;
+                }
+            }
+            
+            foreach( $toRemove as $removal ) {
+                if( is_array($removal) === true && count($removal) === 2 ) {
+                    [$first, $second] = $removal;
+
+                    for( $i = 0; $i < $commandCount; $i++ ) {
+                        $command = $commands[$i] ?? null;
+
+                        if( $first === $command ) {
+                            unset($commands[$i]);
+                            unset($commands[$i + 1]);
+                        }
+                    }
+                }
+                else if( is_string($removal) === true ) {
+                    for( $i = 0; $i < $commandCount; $i++ ) {
+                        $command = $commands[$i];
+
+                        if( $command === $removal ) {
+                            unset($commands[$i]);
+                        }
+                    }
+                }
+            }
+
+            array_shift($commands);
+
+            $numberOfUserProvidedArguments = count($commands);
+            $numberOfRequiredArguments = count($arguments);
+
+            if( $numberOfUserProvidedArguments < $numberOfRequiredArguments ) {
+                throw new NotEnoughArgumentsException("found $numberOfUserProvidedArguments arguments, but the command requires $numberOfRequiredArguments arguments");
+            }
+
+            foreach( $commands as $index => $command ) {
+                $argumentName = $arguments[$index];
+
+                $args[$argumentName] = $command;
+            }
+            
+            return [
+                'arguments' => $args,
+                'options' => $opts,
+                'flags' => $flgs
+            ];
+        }
+    }
+?>

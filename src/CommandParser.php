@@ -8,7 +8,9 @@
         public static function parse(array $definition): array {
             global $argv;
 
-            ['arguments' => $arguments, 'options' => $options, 'flags' => $flags] = $definition;
+            $arguments = $definition['arguments'] ?? [];
+            $options = $definition['options'] ?? [];
+            $flags = $definition['flags'] ?? [];
 
             $args = [];
             $opts = [];
@@ -24,29 +26,43 @@
                 $parts = explode(',', $shortAndLong);
                 $long = trim($parts[0]);
                 $short = isset($parts[1]) ? trim($parts[1]) : null;
-                $flagFound = false;
 
                 foreach( $commands as $command ) {
                     $longQuoted = preg_quote($long);
                     
-                    $regexp = "/^(--$longQuoted";
-
-                    if( is_null($short) === false ) {
-                        $shortQuoted = preg_quote($short);
-
-                        $regexp .= "|-$shortQuoted";
-                    }                    
-
-                    $regexp .= ")$/";
+                    $regexp = "/^(--$longQuoted)$/";                   
 
                     if( preg_match($regexp, $command) === 1 ) {
                         $toRemove[] = $command;
 
-                        $flagFound = true;
+                        $flgs[$long] = true;
                     }
                 }
 
-                $flgs[$long] = $flagFound;
+            }
+
+            foreach( $commands as $command ) {
+                $regexp = "/^-[a-zA-Z]/";
+                $beginsWithShortOptionOrArgument = preg_match($regexp, $command) === 1;
+
+                if( $beginsWithShortOptionOrArgument === true ) {
+                    $optionsOrFlags = str_split(ltrim($command, '-'));
+
+                    foreach( $optionsOrFlags as $optionOrFlag ) {
+                        foreach( $flags as $flag ) {
+                            $shortAndLong = explode(':', $flag)[0];
+                            $parts = explode(',', $shortAndLong);
+                            $long = trim($parts[0]);
+                            $short = isset($parts[1]) ? trim($parts[1]) : null;
+
+                            if( $optionOrFlag === $short ) {
+                                $flgs[$long] = true;
+
+                                $toRemove[] = $command;
+                            }
+                        }
+                    }
+                }
             }
 
             $commands = array_values(array_diff($commands, $toRemove));
@@ -88,18 +104,16 @@
                         if( isset($commands[$nextIndex]) === true ) {
                             $nextCommand = $commands[$nextIndex];
                             
-                            if( preg_match('/^--/', $nextCommand) !== 1 ) {
-                                $toRemove[] = [$command, $nextCommand];
+                            $toRemove[] = [$command, $nextCommand];
 
-                                $commandFound = true;
-                                $commandValue = $nextCommand;
-                            }
-                            else {
-                                throw new OptionWithoutValueException("option $long has no value");
-                            }
+                            $commandFound = true;
+                            $commandValue = $nextCommand;
                         }
                         else {
-                            throw new OptionWithoutValueException("option $long has no value");
+                            $exception = new OptionWithoutValueException("option $long has no value");
+                            $exception->setOptionName($long);
+                            
+                            throw $exception;
                         }
                     }
                     else if( preg_match($regexp2, $command, $matches) === 1 ) {
@@ -116,6 +130,9 @@
             }
             
             foreach( $toRemove as $removal ) {
+                $commands = array_values($commands);
+                $commandCount = count($commands);
+
                 if( is_array($removal) === true && count($removal) === 2 ) {
                     [$first, $second] = $removal;
 
@@ -145,7 +162,11 @@
             $numberOfRequiredArguments = count($arguments);
 
             if( $numberOfUserProvidedArguments < $numberOfRequiredArguments ) {
-                throw new NotEnoughArgumentsException("found $numberOfUserProvidedArguments arguments, but the command requires $numberOfRequiredArguments arguments");
+                $exception = new NotEnoughArgumentsException("found $numberOfUserProvidedArguments arguments, but the command requires $numberOfRequiredArguments arguments");
+                $exception->setUserNumberOfArgument($numberOfUserProvidedArguments);
+                $exception->setRequiredNumberOfArgument($numberOfRequiredArguments);
+
+                throw $exception;
             }
 
             foreach( $commands as $index => $command ) {

@@ -502,5 +502,101 @@
 
             $this->assertEquals($actual, $expected);
         }
+
+        public function testShouldReturnOptionAndFlag() {
+            $_SERVER['argv'] = ['readfile', '--max-length', '12', '--quiet'];
+
+            $actual = CommandParser::parse(['options' => ['max-length'], 'flags' => ['quiet']]);
+            $expected = ['arguments' => [], 'options' => [
+                'max-length' => '12'
+            ], 'flags' => [
+                'quiet' => true
+            ]];
+
+            $this->assertEquals($actual, $expected);
+        }
+
+        public function testShouldReturnOptionAndFlagWithItsShortName() {
+            $_SERVER['argv'] = ['readfile', '--max-length', '12', '--quiet'];
+
+            $actual = CommandParser::parse(['options' => ['max-length'], 'flags' => ['quiet,q']]);
+            $expected = ['arguments' => [], 'options' => [
+                'max-length' => '12'
+            ], 'flags' => [
+                'quiet' => true
+            ]];
+
+            $this->assertEquals($actual, $expected);
+        }
+
+        public function testShouldReturnOptionAndFlags() {
+            $_SERVER['argv'] = ['readfile', '--max-length', '12', '--quiet', '--skip-not-found'];
+
+            $actual = CommandParser::parse(['options' => ['max-length'], 'flags' => ['quiet', 'skip-not-found']]);
+            $expected = ['arguments' => [], 'options' => [
+                'max-length' => '12'
+            ], 'flags' => [
+                'quiet' => true,
+                'skip-not-found' => true
+            ]];
+
+            $this->assertEquals($actual, $expected);
+        }
+
+        public function testShouldReturnOptionAndFlagsWithTheirShortNames() {
+            $_SERVER['argv'] = ['readfile', '--max-length', '12', '--quiet', '--skip-not-found'];
+
+            $actual = CommandParser::parse(['options' => ['max-length'], 'flags' => ['quiet,q', 'skip-not-found,s']]);
+            $expected = ['arguments' => [], 'options' => [
+                'max-length' => '12'
+            ], 'flags' => [
+                'quiet' => true,
+                'skip-not-found' => true
+            ]];
+
+            $this->assertEquals($actual, $expected);
+        }
+
+        public function testShoudReturnOptionAndFlagsAmongMany() {
+            $_SERVER['argv'] = ['readfile', '--max-length', '12', '--quiet', '--skip-not-found'];
+
+            $actual = CommandParser::parse(['options' => ['max-length'], 'flags' => ['quiet', 'skip-not-found', 'recursive']]);
+            $expected = ['arguments' => [], 'options' => [
+                'max-length' => '12'
+            ], 'flags' => [
+                'quiet' => true,
+                'skip-not-found' => true
+            ]];
+
+            $this->assertEquals($actual, $expected);
+        }
+
+        public function testShouldReturnOptionAndFlagsWithTheirFlagsAmongMany() {
+            $_SERVER['argv'] = ['readfile', '--max-length', '12', '--quiet', '--skip-not-found'];
+
+            $actual = CommandParser::parse(['options' => ['max-length'], 'flags' => ['quiet,q', 'skip-not-found,s', 'recursive']]);
+            $expected = ['arguments' => [], 'options' => [
+                'max-length' => '12'
+            ], 'flags' => [
+                'quiet' => true,
+                'skip-not-found' => true
+            ]];
+
+            $this->assertEquals($actual, $expected);
+        }
+
+        public function testShouldReturnOptionAndFlagsAmongManyWithTheirFlags() {
+            $_SERVER['argv'] = ['readfile', '--max-length', '12', '--quiet', '--skip-not-found'];
+
+            $actual = CommandParser::parse(['options' => ['max-length'], 'flags' => ['quiet,q', 'skip-not-found,s', 'recursive,r']]);
+            $expected = ['arguments' => [], 'options' => [
+                'max-length' => '12'
+            ], 'flags' => [
+                'quiet' => true,
+                'skip-not-found' => true
+            ]];
+
+            $this->assertEquals($actual, $expected);
+        }
     }
 ?>

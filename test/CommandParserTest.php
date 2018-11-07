@@ -626,5 +626,81 @@
 
             $this->assertEquals($actual, $expected);
         }
+
+        /**
+         * @see https://github.com/khalyomede/command-parser/issues/2
+         */
+        public function testShouldReturnAFlagWhenUsingAnArgumentIfThisFlagIsSetToOverpassArgumentsCountRestriction() {
+            $_SERVER['argv'] = ['readfile', '--help'];
+
+            $actual = CommandParser::parse(['arguments' => ['path'], 'flags' => ['*help,h']]);
+            $expected = ['arguments' => [], 'options' => [], 'flags' => [
+                'help' => true
+            ]];
+
+            $this->assertEquals($expected, $actual);
+        }
+
+        /**
+         * @see https://github.com/khalyomede/command-parser/issues/2
+         */
+        public function testShouldReturnAShortFlagWhenUsingAnArgumentIfThisFlagIsSetToOverpassArgumentsCountRestriction() {
+            $_SERVER['argv'] = ['readfile', '-h'];
+
+            $actual = CommandParser::parse(['arguments' => ['path'], 'flags' => ['*help,h']]);
+            $expected = ['arguments' => [], 'options' => [], 'flags' => [
+                'help' => true
+            ]];
+
+            $this->assertEquals($expected, $actual);
+        }
+
+        /**
+         * @see https://github.com/khalyomede/command-parser/issues/2
+         */
+        public function testShouldReturnAnOptionWhenUsingAnArgumentIfThisOptionIsSetToOverpassArgumentsCountRestriction() {
+            $_SERVER['argv'] = ['readfile', '--max-length', '12'];
+
+            $actual = CommandParser::parse(['arguments' => ['path'], 'options' => ['*max-length']]);
+            $expected = ['arguments' => [], 'options' => ['max-length' => '12'],'flags' => []];
+
+            $this->assertEquals($expected, $actual);
+        }
+
+        /**
+         * @see https://github.com/khalyomede/command-parser/issues/2
+         */
+        public function testShouldReturnAShortOptionWhenUsingAnArgumentIfThisOptionIsSetToOverpassArgumentsCountRestriction() {
+            $_SERVER['argv'] = ['readfile', '-m', '12'];
+
+            $actual = CommandParser::parse(['arguments' => ['path'], 'options' => ['*max-length,m']]);
+            $expected = ['arguments' => [], 'options' => ['max-length' => '12'], 'flags' => []];
+
+            $this->assertEquals($expected, $actual);
+        }
+
+        /**
+         * @see https://github.com/khalyomede/command-parser/issues/2
+         */
+        public function testShouldReturnAnOptionWithAValueSetWithEqualWhenUsingAnArgumentIfThisOptionIsSetToOverpassArgumentsCountRestriction() {
+            $_SERVER['argv'] = ['readfile', '--max-length=12'];
+
+            $actual = CommandParser::parse(['arguments' => ['path'], 'options' => ['*max-length']]);
+            $expected = ['arguments' => [], 'options' => ['max-length' => '12'],'flags' => []];
+
+            $this->assertEquals($expected, $actual);
+        }
+
+        /**
+         * @see https://github.com/khalyomede/command-parser/issues/2
+         */
+        public function testShouldReturnAShortOptionSetWithEqualWithAValueSetWithEqualWhenUsingAnArgumentIfThisOptionIsSetToOverpassArgumentsCountRestriction() {
+            $_SERVER['argv'] = ['readfile', '-m=12'];
+
+            $actual = CommandParser::parse(['arguments' => ['path'], 'options' => ['*max-length,m']]);
+            $expected = ['arguments' => [], 'options' => ['max-length' => '12'],'flags' => []];
+
+            $this->assertEquals($expected, $actual);
+        }
     }
 ?>

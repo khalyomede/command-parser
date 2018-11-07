@@ -19,18 +19,31 @@
             $commands = $_SERVER['argv'] ?? $argv; 
             $toRemove = [];
 
+            $ignoreArgumentCount = false;
+
             foreach( $flags as $flag ) {
-                $parts = explode(':', $flag);
+                $sudoAndParts = explode('*', $flag);
+
+                if( count($sudoAndParts) === 2 ) {
+                    $ignoreArgumentCount = true;
+                    $parts = $sudoAndParts[1];
+                }
+                else {
+                    $parts = $sudoAndParts[0];
+                }
+
+                $parts = explode(':', $parts);
                 $shortAndLong = $parts[0];
                 $type = isset($parts[1]) ? trim($parts[1]) : null;
                 $parts = explode(',', $shortAndLong);
                 $long = trim($parts[0]);
+
                 $short = isset($parts[1]) ? trim($parts[1]) : null;
 
                 foreach( $commands as $command ) {
                     $longQuoted = preg_quote($long);
                     
-                    $regexp = "/^(--$longQuoted)$/";                   
+                    $regexp = "/^(--$longQuoted)$/";
 
                     if( preg_match($regexp, $command) === 1 ) {
                         $toRemove[] = $command;
@@ -50,13 +63,25 @@
 
                     foreach( $optionsOrFlags as $optionOrFlag ) {
                         foreach( $flags as $flag ) {
-                            $shortAndLong = explode(':', $flag)[0];
+                            $sudoAndShortAndLong = explode('*', $flag);
+                            $shortAndLong = null;
+
+                            if( count($sudoAndShortAndLong) === 2 ) {
+                                $ignoreArgumentCount = true;
+                                $shortAndLong = $sudoAndShortAndLong[1];
+                            }
+                            else {
+                                $shortAndLong = $sudoAndShortAndLong[0];
+                            }
+
+                            $shortAndLong = explode(':', $shortAndLong)[0];
                             $parts = explode(',', $shortAndLong);
                             $long = trim($parts[0]);
                             $short = isset($parts[1]) ? trim($parts[1]) : null;
 
-                            if( $optionOrFlag === $short ) {
+                            if( $optionOrFlag === $short || $optionOrFlag === $long ) {
                                 $flgs[$long] = true;
+                                
 
                                 $toRemove[] = $command;
                             }
@@ -71,7 +96,17 @@
             $toRemove = [];
 
             foreach( $options as $option ) {
-                $parts = explode(':', $option);
+                $sudoAndParts = explode('*', $option);
+
+                if( count($sudoAndParts) === 2 ) {
+                    $ignoreArgumentCount = true;
+                    $parts = $sudoAndParts[1];
+                }
+                else {
+                    $parts = $sudoAndParts[0];
+                }
+
+                $parts = explode(':', $parts);
                 $shortAndLong = $parts[0];
                 $type = isset($parts[1]) ? trim($parts[1]) : null;
                 $parts = explode(',', $shortAndLong);
@@ -161,7 +196,7 @@
             $numberOfUserProvidedArguments = count($commands);
             $numberOfRequiredArguments = count($arguments);
 
-            if( $numberOfUserProvidedArguments < $numberOfRequiredArguments ) {
+            if( $ignoreArgumentCount === false && $numberOfUserProvidedArguments < $numberOfRequiredArguments ) {
                 $exception = new NotEnoughArgumentsException("found $numberOfUserProvidedArguments arguments, but the command requires $numberOfRequiredArguments arguments");
                 $exception->setUserNumberOfArgument($numberOfUserProvidedArguments);
                 $exception->setRequiredNumberOfArgument($numberOfRequiredArguments);

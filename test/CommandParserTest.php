@@ -598,5 +598,33 @@
 
             $this->assertEquals($actual, $expected);
         }
+
+        /**
+         * @see https://github.com/khalyomede/command-parser/issues/3
+         */
+        public function testShouldIgnoreUnknownOption() {
+            $_SERVER['argv'] = ['readfile', '--v'];
+
+            CommandParser::parse(['options' => ['version,v']]);
+
+            $actual = error_get_last();
+            $expected = null;
+
+            $this->assertEquals($actual, $expected);
+        }
+
+        /**
+         * @see https://github.com/khalyomede/command-parser/issues/3
+         */
+        public function testShouldIgnoreUnknownOptionAmongManyKnown() {
+            $_SERVER['argv'] = ['readfile', '--quiet', '12', '--v', '12', '--help', '12'];
+
+            CommandParser::parse(['options' => ['version,v', 'quiet,q', 'help,h']]);
+
+            $actual = error_get_last();
+            $expected = null;
+
+            $this->assertEquals($actual, $expected);
+        }
     }
 ?>

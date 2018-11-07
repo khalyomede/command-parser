@@ -169,6 +169,8 @@
                 throw $exception;
             }
 
+            $commands = array_slice($commands, 0, $numberOfRequiredArguments);
+
             foreach( $commands as $index => $command ) {
                 $argumentName = $arguments[$index];
 
